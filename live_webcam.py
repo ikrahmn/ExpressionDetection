@@ -1,24 +1,4 @@
 """
-Live facial expression recognition from webcam.
-Captures at 1920x1080 (or your camera's max supported resolution) and can
-run in a normal resizable window or true fullscreen.
-
-FEATURES:
-- Bottom-left overlay showing total elapsed runtime and accumulated time
-  per detected expression (only expressions detected at least once are shown).
-- On exit, creates report/session_<timestamp>/ containing two separate
-  files: summary.xlsx (totals + pie/bar charts) and timeline.xlsx
-  (per-sample log for your own time-series charts). Every run gets its own
-  folder, so past sessions are never overwritten.
-
-ACCUMULATION RULE (read this before trusting the numbers):
-  Time is accumulated PER FACE, not per frame. If 3 people are smiling in
-  the same frame, that frame's duration is added to "happy" three times
-  (once per face) -- this answers "how much total face-time was spent on
-  each expression across everyone on screen". Set USE_PER_FACE_ACCUMULATION
-  to False below if you instead want each frame to count at most once per
-  expression, no matter how many faces share it.
-
 Usage:
     python live_webcam.py
     python live_webcam.py --camera 1
@@ -120,11 +100,6 @@ def format_duration(seconds):
 
 
 def draw_overlay(frame, elapsed_seconds, expression_totals):
-    """
-    Bottom-left overlay listing total elapsed runtime and accumulated time
-    for every expression detected so far. Expressions never detected
-    (0 seconds) are not shown.
-    """
     h_img, w_img = frame.shape[:2]
 
     detected = [(label, secs) for label, secs in expression_totals.items() if secs > 0]
@@ -156,11 +131,6 @@ def draw_overlay(frame, elapsed_seconds, expression_totals):
 
 
 def save_summary_report(path, start_time, expression_totals, timeline):
-    """
-    Writes a standalone .xlsx containing only the Summary data: total
-    elapsed time + accumulated seconds per expression, with a pie chart
-    and bar chart built in.
-    """
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     from openpyxl.chart import PieChart, BarChart, Reference
@@ -229,12 +199,6 @@ def save_summary_report(path, start_time, expression_totals, timeline):
 
 
 def save_timeline_report(path, timeline):
-    """
-    Writes a standalone .xlsx containing only the Timeline data: one row
-    per logged sample (elapsed seconds, per-expression seconds added during
-    that sample, and how many faces were detected) -- ready for your own
-    time-series charts (e.g. a stacked area chart of expression activity).
-    """
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     from openpyxl.utils import get_column_letter
@@ -260,11 +224,10 @@ def save_timeline_report(path, timeline):
         ws2.column_dimensions[get_column_letter(i)].width = 14
 
     wb.save(path)
-    print(f"Timeline report saved: {path}")
+    print(f"Timeline report disimpan: {path}")
 
 
 def save_reports(session_dir, start_time, expression_totals, timeline):
-    """Writes summary.xlsx and timeline.xlsx into session_dir (created if needed)."""
     os.makedirs(session_dir, exist_ok=True)
     save_summary_report(os.path.join(session_dir, "summary.xlsx"), start_time, expression_totals, timeline)
     save_timeline_report(os.path.join(session_dir, "timeline.xlsx"), timeline)
@@ -344,14 +307,14 @@ def main():
     if fullscreen:
         cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    print("Live detection started. Press 'q' to quit (saves report), 'f' to toggle fullscreen, 'e' to save report now.")
+    print("Live detection dimulai. Tekan 'q' untuk keluar (saves report), 'f' untuk fullscreen, 'e' untuk membuat report tanpa keluar dari program ")
 
     start_dt = datetime.now()
     start_t = time.time()
     last_t = start_t
 
-    expression_totals = defaultdict(float)   # English label -> accumulated seconds (running total)
-    timeline = []                            # list of {"elapsed", "deltas", "face_count"}
+    expression_totals = defaultdict(float)
+    timeline = []
 
     report_dir = os.path.join(args.report_dir, f"session_{start_dt.strftime('%Y%m%d_%H%M%S')}")
 
@@ -380,7 +343,7 @@ def main():
             )
 
             h_img, w_img = frame.shape[:2]
-            sample_deltas = defaultdict(float)  # seconds added to each label THIS sample only
+            sample_deltas = defaultdict(float)
 
             for (x, y, w, h) in faces:
                 x0, y0 = max(0, x - PADDING), max(0, y - PADDING)
@@ -395,7 +358,7 @@ def main():
                     expression_totals[label] += dt
                     sample_deltas[label] += dt
                 else:
-                    sample_deltas[label] = dt  # mark present; applied once below
+                    sample_deltas[label] = dt
 
             if not USE_PER_FACE_ACCUMULATION:
                 for label in sample_deltas:

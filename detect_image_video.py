@@ -1,28 +1,4 @@
 """
-Facial Expression Recognition - Image & Video processor
-Detects faces (OpenCV Haar cascade) and classifies expression (YOLOv8-cls trained on FER2013).
-Labels are displayed in Indonesian (see LABELS_ID below); change to taste.
-
-FEATURES:
-- For VIDEOS: a bottom-left overlay is burned into every output frame showing
-  elapsed video time and accumulated time per detected expression (only
-  expressions seen so far are listed). Creates report/<video_name>/ containing
-  summary.xlsx (totals + pie/bar charts) and timeline.xlsx (per-frame log).
-- For IMAGES: no time overlay is drawn (a single still frame has no duration
-  to accumulate). Creates report/<image_name>/detections.xlsx listing every
-  detected face's expression and confidence.
-
-ACCUMULATION RULE for videos (read this before trusting the numbers):
-  Time is accumulated PER FACE, not per frame. If 3 people are smiling in
-  the same frame, that frame's duration is added to "happy" three times
-  (once per face) -- this answers "how much total face-time was spent on
-  each expression across everyone in the video". Set
-  USE_PER_FACE_ACCUMULATION to False below if you instead want each frame
-  to count at most once per expression, no matter how many faces share it.
-  Video time is driven by the video's own FPS metadata, not wall-clock
-  processing speed, so the report reflects in-video time correctly even
-  though processing itself may run slower or faster than real-time.
-
 Usage:
     python detect_image_video.py --source path/to/image.jpg
     python detect_image_video.py --source path/to/video.mp4
@@ -40,11 +16,10 @@ from ultralytics import YOLO
 
 # ---- CONFIG ----------------------------------------------------------
 
-MODEL_PATH = "fer2013_best.pt"  # path to your trained YOLO classification model
+MODEL_PATH = "fer2013_best.pt"
 
 USE_PER_FACE_ACCUMULATION = True
 
-# Maps the model's English class names to Indonesian for display only.
 LABELS_ID = {
     "angry":    "MARAH",
     "disgust":  "JIJIK",
@@ -69,7 +44,7 @@ BOX_THICKNESS = 4
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SCALE = 1.0
 FONT_THICKNESS = 2
-PADDING = 10  # extra pixels added around the detected face crop before classification
+PADDING = 10
 
 OVERLAY_FONT_SCALE = 0.8
 OVERLAY_FONT_THICKNESS = 2
@@ -87,7 +62,6 @@ model = YOLO(MODEL_PATH)
 
 
 def classify_face(face_img):
-    """Run the YOLO classifier on a cropped face image. Returns (label, confidence)."""
     if face_img.size == 0:
         return None, 0.0
     results = model.predict(face_img, verbose=False)
@@ -127,7 +101,6 @@ def format_duration(seconds):
 
 
 def draw_overlay(frame, elapsed_seconds, expression_totals):
-    """Bottom-left overlay: accumulated time per detected expression + elapsed time."""
     h_img, w_img = frame.shape[:2]
 
     detected = [(label, secs) for label, secs in expression_totals.items() if secs > 0]
@@ -159,7 +132,6 @@ def draw_overlay(frame, elapsed_seconds, expression_totals):
 
 
 def save_video_summary(path, source_name, expression_totals, timeline):
-    """Standalone xlsx: Summary totals + pie/bar charts for a processed video."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     from openpyxl.chart import PieChart, BarChart, Reference
@@ -258,7 +230,6 @@ def save_video_timeline(path, timeline):
 
 
 def save_image_detections(path, source_name, face_results):
-    """Standalone xlsx: one row per detected face in a processed image."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
 
@@ -353,7 +324,7 @@ def process_video(path, output_dir, report_dir):
     timeline = []
 
     frame_count = 0
-    print("Processing video... this may take a while.")
+    print("Memproses video... mohon bersabar.")
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -441,7 +412,7 @@ def main():
     elif src.lower().endswith(video_exts):
         process_video(src, args.output, args.report_dir)
     else:
-        print("Unsupported file type. Use an image, video, or folder.")
+        print(f"File tidak disupport. Gunakan file video atau gambar: {image_exts} / {video_exts}")
 
 
 if __name__ == "__main__":
